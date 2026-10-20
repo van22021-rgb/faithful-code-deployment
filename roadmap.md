@@ -4,4 +4,4 @@
 - [x] Persist original demo catalog and allow admin create/edit/status changes.
 - [x] Add management page with authenticated, role-protected data and mutations.
 - [x] Verify customer/admin flows and access boundaries.
-- [ ] Assign administrator: blocked until Chí Quy supplies the email of their registered account.
+- [ ] Assign administrator to tanchinhuquy@gmail.com and bienthuachi@gmail.com: both emails are absent from registered accounts; blocked until they sign up.
