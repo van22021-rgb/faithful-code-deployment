@@ -1720,7 +1720,9 @@ async function pageAdmin(){
   const renderId=++adminRender;
   sub.replaceChildren(back(),h('span',{class:'kicker',text:'QUẢN TRỊ — CHÍ QUY'}),h('h1',{class:'sp-title'},'ADMIN',h('small',{text:' PANEL'})));
   const box=h('div',{class:'adm'});sub.append(box);
-  try{await syncCloud()}catch(error){box.append(h('div',{class:'notice',text:error.message}));return}
+  const wait=h('div',{class:'mono count',text:'ĐANG TẢI DỮ LIỆU QUẢN TRỊ…'});box.append(wait);
+  try{await syncCloud()}catch(error){wait.remove();box.append(h('div',{class:'notice',text:error.message}));return}
+  wait.remove();
   if(renderId!==adminRender||!/^#\/admin/.test(cur)||!box.isConnected)return;
   if(!session){box.append(h('button',{type:'button',class:'cbtn',text:'ĐĂNG NHẬP QUẢN TRỊ',onclick:()=>openAuth('login','Đăng nhập bằng tài khoản của Chí Quy.')}));return}
   if(!cloudAdmin){box.append(h('div',{class:'notice',text:'Tài khoản này chưa được cấp quyền quản trị.'}),h('button',{type:'button',class:'cbtn ghost',text:'ĐĂNG XUẤT',onclick:logout}));return}
@@ -1790,6 +1792,7 @@ function route(){
   adminRender++;
   reload();loadCart();refresh();
   const m=cur.match(/^#\/([\w-]+)/),k=m&&m[1];
+  if(cloud()&&cloud().path)cloud().path(k==='admin');
   document.body.classList.toggle('sub',!!k);document.body.classList.toggle('is-adm',k==='admin');document.title=(k&&TT[k]?TT[k]+' — ':'')+T0;
   if(k){
     if(SVC[k])pageService(k);else if(k==='samples')pageSamples();else if(k==='policy')pagePolicy();else if(k==='demo')pageDemo();else if(k==='admin')pageAdmin();else{go('#');return}
