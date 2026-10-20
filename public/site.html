@@ -494,9 +494,7 @@ requestAnimationFrame(f);
   <p class="mono amsg" id="authMsg"></p>
   <div class="tabs"><button type="button" class="filter active" data-m="login">ĐĂNG NHẬP</button><button type="button" class="filter" data-m="reg">ĐĂNG KÝ</button></div>
   <form id="authF" novalidate>
-    <label class="fld reg"><span>HỌ TÊN / TÊN STUDIO *</span><input name="name" autocomplete="name"/></label>
     <label class="fld"><span>EMAIL *</span><input name="email" type="email" autocomplete="email" inputmode="email"/></label>
-    <label class="fld reg"><span>LINK FACEBOOK *</span><input name="fb" type="url" placeholder="https://facebook.com/ten-ban"/></label>
     <label class="fld"><span>MẬT KHẨU *</span><input name="pw" type="password" autocomplete="current-password"/></label>
     <label class="fld reg"><span>NHẬP LẠI MẬT KHẨU *</span><input name="pw2" type="password" autocomplete="new-password"/></label>
     <div class="formerr" id="authErr" role="alert"></div>
@@ -531,8 +529,8 @@ const SVC={
  event:{locked:true,name:'PHONG HƯỞNG',tag:'EVENT',lead:'Nghiêm Hoằng Chương',letter:'E',intro:'Ý tưởng, concept, kế hoạch sự kiện và tư vấn truyền thông cho cá nhân, page và group.'}};
 const svcLabel=k=>SVC[k].name+' ('+SVC[k].tag+')';
 const TAGS={codai:'CỔ ĐẠI',tanthe:'TẬN THẾ',cungdinh:'CUNG ĐÌNH',quandau:'QUAN ĐẤU',tinhte:'TINH TẾ',trungtoc:'CHIẾN ĐẤU TRÙNG TỘC',giaitri:'GIỚI GIẢI TRÍ',maimoi:'MAI MỐI'};
-const DST={available:'CHƯA THUỘC QUYỀN SỞ HỮU',slotout:'SLOT OUT — SHOWCASE'};
-const OST={received:'ĐÃ NHẬN ĐƯỢC THÔNG TIN — CHỜ PHẢN HỒI SAU 7 NGÀY',processing:'ĐANG XỬ LÝ',accepted:'CHẤP THUẬN — CHỜ THANH TOÁN',replied:'ĐÃ PHẢN HỒI',done:'HOÀN TẤT',rejected:'TỪ CHỐI'};
+const DST={available:'CHƯA THUỘC QUYỀN SỞ HỮU',slotout:'SLOT OUT'};
+const OST={received:'Đã Nhận Được Thông Tin - Chờ Phản Hồi Sau 7 Ngày',processing:'ĐANG XỬ LÝ',accepted:'CHẤP THUẬN — CHỜ THANH TOÁN',replied:'ĐÃ PHẢN HỒI',done:'HOÀN TẤT',rejected:'TỪ CHỐI'};
 const RULES={
  web:[['Timeline','Landing page 5–10 ngày làm việc, business web 10–20 ngày, tính từ khi chốt scope và nhận đủ nội dung.'],['Revision','2 vòng chỉnh sửa trong phạm vi đã chốt. Thay đổi layout hoặc tính năng ngoài scope sẽ được báo giá lại.'],['Bàn giao','Website hoàn chỉnh theo yêu cầu đã thống nhất. Nếu có hệ thống quản trị thì bàn giao cùng website. Không bàn giao mã nguồn, repository hay tài nguyên phát triển nội bộ.'],['Thanh toán','Chuyển khoản. Cọc trước khi bắt đầu, phần còn lại khi nghiệm thu.']],
  video:[['Timeline','Short form 2–5 ngày, brand edit 5–10 ngày làm việc, tính từ khi nhận đủ footage và brief.'],['Revision','2 vòng chỉnh sửa. Dựng lại toàn bộ hoặc đổi concept sau khi duyệt bản rough cut sẽ tính phí thêm.'],['Bàn giao','File xuất theo tỷ lệ khung hình đã thống nhất. Project file chỉ bàn giao khi có thỏa thuận riêng.'],['Thanh toán','Chuyển khoản. Cọc trước khi bắt đầu, phần còn lại trước khi gửi file cuối.']],
@@ -546,16 +544,18 @@ const SEED=[
  {code:"CQ-W-046",name:"Hồng Tuyến",service:'web',tags:["codai", "maimoi"],visual:15,url:"",support:["Thay đổi nội dung toàn bộ", "Thêm tối đa 1 trang và 2 chức năng (vd: vòng quay)", "Thay đổi 30% bố cục, theme (vd: trang chủ)", "Lưu trữ dữ liệu người chơi và tài sản"],status:'available'}
 ];
 
-/* ---------- data layer (localStorage; swap for a real backend later) ---------- */
-let demos,allOrders,users,session;
-function reload(){
-  demos=store.get('cq_demos',null);if(!demos||store.get('cq_seed_v',0)<3){demos=SEED.map(x=>({...x,tags:[...x.tags],support:[...x.support]}));store.set('cq_demos',demos);store.set('cq_seed_v',3)}
-  allOrders=store.get('cq_orders',[]);users=store.get('cq_users',{});session=store.get('cq_session',null);
-  if(session&&!users[session])session=null;
-}
-const saveDemos=()=>store.set('cq_demos',demos),saveOrders=()=>store.set('cq_orders',allOrders);
-reload();
+/* ---------- Cloud data layer ---------- */
+let demos=[],allOrders=[],users={},session=null,cloudAdmin=false,customerName='';
 let cart=[],pending=null,view='cart',lastOrder=null,lastFocus=null;
+const cloud=()=>window.parent.chiquyCloud;
+function reload(){}
+async function syncCloud(){
+  if(!cloud())return;
+  const state=await cloud().load();
+  demos=state.demos;allOrders=state.orders;session=state.session;cloudAdmin=state.admin;
+  users=session?{[session]:{name:customerName,approved:true}}:{};
+  loadCart();refresh();
+}
 const myOrders=()=>allOrders.filter(o=>o.account===session);
 function loadCart(){cart=session?store.get('cq_cart_'+session,[]):[]}
 function saveCart(){if(session)store.set('cq_cart_'+session,cart);refresh()}
@@ -582,29 +582,26 @@ function refresh(){
 let mode='login';
 function setMode(m){mode=m;const M=$('#authM');M.classList.toggle('mode-login',m==='login');$$('.tabs .filter',M).forEach(b=>b.classList.toggle('active',b.dataset.m===m));$('#authT').textContent=m==='login'?'ĐĂNG NHẬP':'ĐĂNG KÝ';$('#authGo').textContent=m==='login'?'ĐĂNG NHẬP':'TẠO TÀI KHOẢN';$('#authErr').textContent='';$('#authF').pw.autocomplete=m==='login'?'current-password':'new-password'}
 $$('.tabs .filter').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.m)));
-function openAuth(m,msg){lastFocus=document.activeElement;$('#drawer').classList.remove('on');setMode(m||'login');$('#authMsg').textContent=msg||'';showOv();setBg(true);$('#authM').classList.add('on');setTimeout(()=>$('#authF')[mode==='reg'?'name':'email'].focus(),120)}
+function openAuth(m,msg){lastFocus=document.activeElement;$('#drawer').classList.remove('on');setMode(m||'login');$('#authMsg').textContent=msg||'';showOv();setBg(true);$('#authM').classList.add('on');setTimeout(()=>$('#authF').email.focus(),120)}
 $('#authF').addEventListener('submit',async e=>{
-  e.preventDefault();reload();const f=e.target,err=$('#authErr'),go=$('#authGo');
-  const email=f.email.value.trim().toLowerCase(),pw=f.pw.value;
+  e.preventDefault();const f=e.target,err=$('#authErr'),go=$('#authGo');
+  const email=f.email.value.trim().toLowerCase(),password=f.pw.value;
   if(!emailOK(email))return err.textContent='Email chưa đúng định dạng.';
-  if(pw.length<6)return err.textContent='Mật khẩu cần tối thiểu 6 ký tự.';
-  go.disabled=true;
+  if(password.length<6)return err.textContent='Mật khẩu cần tối thiểu 6 ký tự.';
+  if(mode==='reg'&&password!==f.pw2.value)return err.textContent='Mật khẩu nhập lại chưa khớp.';
+  go.disabled=true;err.textContent='';
   try{
-    if(mode==='login'){const u=users[email];if(!u||await hash(pw,u.salt)!==u.hash){err.textContent='Email hoặc mật khẩu không đúng.';return}}
-    else{
-      const name=f.name.value.trim(),fb=fbFix(f.fb.value);
-      if(!name){err.textContent='Vui lòng nhập họ tên / tên studio.';return}
-      if(!fbOK(fb)){err.textContent='Link Facebook chưa hợp lệ (vd: https://facebook.com/ten-ban).';return}
-      if(pw!==f.pw2.value){err.textContent='Mật khẩu nhập lại chưa khớp.';return}
-      if(users[email]){err.textContent='Email này đã có tài khoản. Hãy đăng nhập.';return}
-      const salt=rnd();users[email]={name,fb,salt,hash:await hash(pw,salt),approved:true,createdAt:Date.now()};store.set('cq_users',users);
-    }
-    session=email;store.set('cq_session',session);loadCart();f.reset();refresh();
-    $('#authM').classList.remove('on');$('#ov').classList.remove('on');setBg(false);
-    if(pending){const c=pending;pending=null;addDemo(c,true)}else toast('Xin chào, '+(me().name||email));
-  }finally{go.disabled=false}
+    if(!cloud())throw new Error('Đang kết nối, vui lòng thử lại.');
+    await cloud().auth({email,password,signup:mode==='reg'});await syncCloud();
+    f.reset();closeAll();
+    if(/^#\/admin/.test(cur)){pageAdmin();return}
+    if(pending){const c=pending;pending=null;addDemo(c,true)}else toast('Đã đăng nhập: '+session);
+  }catch(error){err.textContent=error.message||'Không đăng nhập được.'}finally{go.disabled=false}
 });
-function logout(){session=null;store.set('cq_session',null);loadCart();refresh();closeAll();toast('Đã đăng xuất');if(/^#\/admin/.test(cur))route()}
+async function logout(){
+  try{await cloud().logout();session=null;cloudAdmin=false;allOrders=[];users={};lastOrder=null;loadCart();refresh();closeAll();toast('Đã đăng xuất');if(/^#\/admin/.test(cur))route()}
+  catch(error){toast(error.message)}
+}
 
 /* ---------- cart ---------- */
 function addDemo(code,openAfter){
@@ -615,7 +612,8 @@ function addDemo(code,openAfter){
   if(openAfter){openDrawer('cart');return}
   toast('Đã thêm '+code+' vào giỏ',{label:'XEM GIỎ',fn:()=>openDrawer('cart')});
 }
-function openDrawer(v){
+async function openDrawer(v){
+  try{await syncCloud()}catch(error){toast(error.message);return}
   if(!session){openAuth('login','Đăng nhập để xem giỏ hàng và đặt demo.');return}
   reload();lastFocus=document.activeElement;view=v||'cart';render();showOv();$('#authM').classList.remove('on');$('#drawer').classList.add('on');setBg(true);let tries=0;(function fd(){const c=$('#dClose');if(c)c.focus();if(document.activeElement!==c&&++tries<8)setTimeout(fd,100)})();
 }
@@ -660,14 +658,18 @@ function orderText(o){
   o.items.forEach((i,n)=>{L.push((n+1)+'. '+i.code+' — '+i.name,'   Link Facebook: '+i.fb,'   Email liên hệ: '+i.email,'   Mức giá đưa ra: '+money(i.price));if(i.note)L.push('   Yêu cầu thêm: '+i.note);L.push('')});
   L.push('Tổng giá đề xuất: '+money(o.total));return L.join('\n');
 }
-function submitOrder(){
+async function submitOrder(){
   if(!cart.length)return;reload();
   const gone=cart.filter(i=>{const d=demoOf(i.code);return !d||d.status==='slotout'});
   if(gone.length){cart=cart.filter(i=>!gone.includes(i));saveCart();render();toast('Đã bỏ khỏi giỏ demo SLOT OUT: '+gone.map(i=>i.code).join(', '));return}
   if(!validate()){toast('Vui lòng điền đủ thông tin cho từng demo');return}
-  const at=Date.now(),D=new Date(at);
-  const o={id:'CQ-'+String(D.getFullYear()).slice(2)+pad(D.getMonth()+1)+pad(D.getDate())+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),at,due:at+DAYS*864e5,status:'received',name:me().name||session,account:session,fb:me().fb||'',items:cart.map(i=>({...i,price:Number(i.price)})),total:total()};
-  allOrders.unshift(o);saveOrders();cart=[];saveCart();lastOrder=o;view='done';render();
+  if(!customerName.trim()){toast('Vui lòng nhập họ tên / tên studio.');$('#orderName')?.focus();return}
+  const button=$('#dFoot .cbtn');if(button)button.disabled=true;
+  try{
+    const o=await cloud().place({name:customerName||session,items:cart.map(i=>({...i,price:Number(i.price)}))});
+    allOrders.unshift(o);cart=[];saveCart();lastOrder=o;view='done';render();
+  }catch(error){toast(error.message)}finally{if(button)button.disabled=false}
+
 }
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=h('textarea');a.value=t;document.body.append(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
 const mailLink=o=>'mailto:'+SUPPORT+'?subject='+encodeURIComponent('[CHÍ QUY] Đơn đặt demo '+o.id+' — '+o.name)+'&body='+encodeURIComponent(orderText(o));
@@ -693,7 +695,7 @@ function render(){
   if(os.length)body.append(h('div',{class:'ords top'},h('h3',{text:'ĐƠN GẦN NHẤT · '+os[0].id}),stBadge(os[0])));
   body.append(h('div',{class:'notice'},'Điền đủ thông tin cho từng demo trước khi gửi đặt hàng. Chí Quy phản hồi trong ',h('b',{text:'7 ngày'}),'. Mọi mức giá ghi nhận giao dịch bằng ',h('b',{text:'chuyển khoản'}),'. Mức giá chỉ là đề xuất; Chí Quy có quyền chấp thuận hoặc từ chối. Xem ',h('a',{class:'link',href:'#/demo',text:'Quy định đặt mua Demo'}),' · ',h('a',{class:'link',href:'#/policy',text:'Quy định chung'}),'.'));
   if(!cart.length)body.append(h('div',{class:'empty2'},h('p',{text:'Giỏ hàng đang trống. Chọn demo ở phần Samples và bấm “+ ĐẶT DEMO”.'}),h('button',{type:'button',class:'cbtn ghost',text:'XEM SAMPLES',onclick:()=>{closeAll();go('#/samples')}})));
-  else cart.forEach((it,i)=>body.append(itemView(it,i)));
+  else {const nameInput=h('input',{id:'orderName',value:customerName,maxlength:200,autocomplete:'name'});nameInput.addEventListener('input',()=>customerName=nameInput.value);body.append(h('label',{class:'fld'},h('span',{text:'HỌ TÊN / TÊN STUDIO *'}),nameInput));cart.forEach((it,i)=>body.append(itemView(it,i)));}
   if(os.length){
     const box=h('div',{class:'ords'},h('h3',{text:'LỊCH SỬ ĐƠN ('+os.length+')'}));
     os.forEach(o=>box.append(h('details',{},h('summary',{text:o.id+' · '+fdate(o.at)+' · '+o.items.length+' demo · '+money(o.total)}),
@@ -1688,26 +1690,15 @@ function pagePolicy(){
 }
 
 /* ---------- admin ---------- */
-let adminOK=false,aTab='orders',editing=null;
+let aTab='orders',editing=null;
 async function pageAdmin(){
-  reload();$('#sub').replaceChildren(back(),h('span',{class:'kicker',text:'QUẢN TRỊ — CHÍ QUY'}),h('h1',{class:'sp-title'},'ADMIN',h('small',{text:' PANEL'})));
-  const cfg=store.get('cq_admin',null),box=h('div',{class:'adm'});sub.append(box);
-  if(!adminOK){
-    const f=h('form',{class:'admlogin'}),err=h('div',{class:'formerr'});
-    const pw=h('input',{type:'password',autocomplete:cfg?'current-password':'new-password'}),pw2=h('input',{type:'password',autocomplete:'new-password'});
-    f.append(h('p',{class:'mono',text:cfg?'Nhập mật khẩu quản trị để vào trang quản lý.':'Chưa có mật khẩu quản trị. Tạo mật khẩu (tối thiểu 6 ký tự) cho trang này.'}),
-      h('label',{class:'fld'},h('span',{text:'MẬT KHẨU QUẢN TRỊ'}),pw),cfg?null:h('label',{class:'fld'},h('span',{text:'NHẬP LẠI MẬT KHẨU'}),pw2),err,h('button',{type:'submit',class:'cbtn',text:cfg?'VÀO TRANG QUẢN TRỊ':'TẠO MẬT KHẨU'}));
-    f.addEventListener('submit',async e=>{e.preventDefault();
-      if(pw.value.length<6){err.textContent='Mật khẩu tối thiểu 6 ký tự.';return}
-      if(cfg){if(await hash(pw.value,cfg.salt)!==cfg.hash){err.textContent='Mật khẩu không đúng.';return}}
-      else{if(pw.value!==pw2.value){err.textContent='Mật khẩu nhập lại chưa khớp.';return}const salt=rnd();store.set('cq_admin',{salt,hash:await hash(pw.value,salt)})}
-      adminOK=true;pageAdmin()});
-    box.append(f);return;
-  }
-  const tabs=h('div',{class:'tabs'},...[['orders','ĐƠN ĐẶT DEMO ('+allOrders.length+')'],['demos','QUẢN LÝ DEMO ('+demos.length+')']].map(([k,t])=>h('button',{type:'button',class:'filter'+(aTab===k?' active':''),text:t,onclick:()=>{aTab=k;editing=null;pageAdmin()}})),
-    h('button',{type:'button',class:'filter',text:'ĐĂNG XUẤT ADMIN',onclick:()=>{adminOK=false;pageAdmin()}}));
-  box.append(h('div',{class:'notice'},'Dữ liệu đơn hàng và demo hiện lưu trong trình duyệt này. Để nhận đơn từ khách ở thiết bị khác cần kết nối máy chủ / cơ sở dữ liệu.'),tabs);
-  box.append(aTab==='orders'?adminOrders():adminDemos());
+  sub.replaceChildren(back(),h('span',{class:'kicker',text:'QUẢN TRỊ — CHÍ QUY'}),h('h1',{class:'sp-title'},'ADMIN',h('small',{text:' PANEL'})));
+  const box=h('div',{class:'adm'});sub.append(box);
+  try{await syncCloud()}catch(error){box.append(h('div',{class:'notice',text:error.message}));return}
+  if(!session){box.append(h('button',{type:'button',class:'cbtn',text:'ĐĂNG NHẬP QUẢN TRỊ',onclick:()=>openAuth('login','Đăng nhập bằng tài khoản của Chí Quy.')}));return}
+  if(!cloudAdmin){box.append(h('div',{class:'notice',text:'Tài khoản này chưa được cấp quyền quản trị.'}),h('button',{type:'button',class:'cbtn ghost',text:'ĐĂNG XUẤT',onclick:logout}));return}
+  const tabs=h('div',{class:'tabs'},...[['orders','ĐƠN ĐẶT DEMO ('+allOrders.length+')'],['demos','QUẢN LÝ DEMO ('+demos.length+')']].map(([k,t])=>h('button',{type:'button',class:'filter'+(aTab===k?' active':''),text:t,onclick:()=>{aTab=k;editing=null;pageAdmin()}})),h('button',{type:'button',class:'filter',text:'ĐĂNG XUẤT',onclick:logout}));
+  box.append(tabs,aTab==='orders'?adminOrders():adminDemos());
 }
 function adminOrders(){
   const w=h('div',{});
@@ -1716,7 +1707,7 @@ function adminOrders(){
   if(!allOrders.length)w.append(h('div',{class:'empty2',text:'Chưa có đơn đặt demo nào.'}));
   allOrders.forEach(o=>{
     const sel=h('select',{class:'sel'},...Object.keys(OST).map(k=>h('option',{value:k,text:OST[k],selected:k===o.status?'':null})));
-    sel.addEventListener('change',()=>{o.status=sel.value;saveOrders();toast('Đã cập nhật trạng thái '+o.id);pageAdmin()});
+    sel.addEventListener('change',async()=>{sel.disabled=true;try{await cloud().update(o.id,sel.value);toast('Đã cập nhật trạng thái '+o.id);pageAdmin()}catch(error){sel.value=o.status;toast(error.message)}finally{sel.disabled=false}});
     const u=users[o.account]||{};
     w.append(h('div',{class:'item ord'},
       h('div',{class:'ih'},h('div',{},h('div',{class:'c',text:o.id+' · '+fdate(o.at)}),h('div',{class:'n',text:o.name})),h('div',{class:'tot',text:money(o.total)})),
@@ -1732,36 +1723,35 @@ function adminDemos(){
   const f={code:h('input',{value:e?e.code:'',placeholder:'Để trống để tự tạo (vd: CQ-W-035)',readonly:e?'':null}),name:h('input',{value:e?e.name:'',placeholder:'Tên demo'}),
     svc:h('select',{class:'sel'},...Object.keys(SVC).map(k=>h('option',{value:k,text:svcLabel(k),selected:e&&e.service===k?'':null}))),
     vis:h('select',{class:'sel'},...[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n=>h('option',{value:n,text:'Màu '+n,selected:e&&e.visual===n?'':null}))),
-    st:h('select',{class:'sel'},...Object.keys(DST).map(k=>h('option',{value:k,text:DST[k],selected:e&&e.status===k?'':null})))};
+    url:h('input',{value:e?e.url:'',type:'url',placeholder:'https://...'}),support:h('textarea',{}),st:h('select',{class:'sel'},...Object.keys(DST).map(k=>h('option',{value:k,text:DST[k],selected:e&&e.status===k?'':null})))};
+  f.support.value=e?(e.support||[]).join('\n'):'';
   const tg=Object.keys(TAGS).map(k=>{const c=h('input',{type:'checkbox',value:k});if(e&&e.tags.includes(k))c.checked=true;return c});
   const pv=h('div',{class:'sample pv'},h('div',{class:'vis'}));const setPv=()=>pv.className='sample pv s'+f.vis.value;f.vis.addEventListener('change',setPv);setPv();
   const err=h('div',{class:'formerr'});
   const fm=h('form',{class:'item'},h('div',{class:'c mono',text:e?'SỬA DEMO '+e.code:'THÊM DEMO MỚI'}),
     h('label',{class:'fld'},h('span',{text:'MÃ SỐ'}),f.code),h('label',{class:'fld'},h('span',{text:'TÊN DEMO *'}),f.name),
     h('label',{class:'fld'},h('span',{text:'DỊCH VỤ'}),f.svc),
+    h('label',{class:'fld'},h('span',{text:'LIÊN KẾT DEMO'}),f.url),h('label',{class:'fld'},h('span',{text:'NỘI DUNG HỖ TRỢ (mỗi dòng một mục)'}),f.support),
     h('div',{class:'fld'},h('span',{text:'TAG (thể loại / phong cách)'}),h('div',{class:'chks'},...tg.map((c,i)=>h('label',{class:'chk'},c,h('span',{text:'#'+TAGS[Object.keys(TAGS)[i]]}))))),
     h('div',{class:'fld'},h('span',{text:'MÀU HIỂN THỊ'}),h('div',{class:'row2'},f.vis,pv)),
     h('label',{class:'fld'},h('span',{text:'TRẠNG THÁI'}),f.st),err,
     h('button',{type:'submit',class:'cbtn',text:e?'LƯU THAY ĐỔI':'ĐĂNG DEMO'}),e?h('button',{type:'button',class:'cbtn ghost',text:'HỦY SỬA',onclick:()=>{editing=null;pageAdmin()}}):null);
-  fm.addEventListener('submit',ev=>{ev.preventDefault();
+  fm.addEventListener('submit',async ev=>{ev.preventDefault();
     const name=f.name.value.trim();if(!name){err.textContent='Vui lòng nhập tên demo.';return}
     const tags=tg.filter(c=>c.checked).map(c=>c.value);
-    if(e){Object.assign(e,{name,service:f.svc.value,tags,visual:+f.vis.value,status:f.st.value})}
-    else{
-      const L=SVC[f.svc.value].letter;let code=f.code.value.trim().toUpperCase();
-      if(!code){const max=Math.max(0,...demos.filter(d=>d.code.startsWith('CQ-'+L+'-')).map(d=>parseInt(d.code.split('-')[2])||0));code='CQ-'+L+'-'+String(max+1).padStart(3,'0')}
-      if(demos.some(d=>d.code===code)){err.textContent='Mã '+code+' đã tồn tại.';return}
-      demos.unshift({code,name,service:f.svc.value,tags,visual:+f.vis.value,status:f.st.value});
-    }
-    saveDemos();toast(e?'Đã lưu thay đổi':'Đã đăng demo mới');editing=null;pageAdmin()});
+    const L=SVC[f.svc.value].letter;let code=e?e.code:f.code.value.trim().toUpperCase();
+    if(!code){const max=Math.max(0,...demos.filter(d=>d.code.startsWith('CQ-'+L+'-')).map(d=>parseInt(d.code.split('-')[2])||0));code='CQ-'+L+'-'+String(max+1).padStart(3,'0')}
+    if(!e&&demos.some(d=>d.code===code)){err.textContent='Mã '+code+' đã tồn tại.';return}
+    const button=fm.querySelector('[type=submit]');button.disabled=true;
+    try{await cloud().save({code,name,service:f.svc.value,tags,visual:+f.vis.value,status:f.st.value,url:f.url.value.trim(),support:f.support.value.split('\n').map(x=>x.trim()).filter(Boolean)});toast(e?'Đã lưu thay đổi':'Đã đăng demo mới');editing=null;pageAdmin()}
+    catch(error){err.textContent=error.message||'Không lưu được demo.'}finally{button.disabled=false}
+  });
   w.append(fm,h('div',{class:'mono count',text:'DANH SÁCH DEMO'}));
   demos.forEach(d=>{
-    let armed=false;
-    const del=h('button',{type:'button',class:'navbtn',text:'XÓA',onclick:()=>{if(!armed){armed=true;del.textContent='XÁC NHẬN XÓA?';setTimeout(()=>{armed=false;del.textContent='XÓA'},3000);return}demos=demos.filter(x=>x!==d);saveDemos();pageAdmin()}});
     w.append(h('div',{class:'item dl'},h('div',{class:'sample pv s'+d.visual},h('div',{class:'vis'})),
       h('div',{class:'dm'},h('div',{class:'c',text:d.code+' · '+svcLabel(d.service)}),h('div',{class:'n',text:d.name}),h('div',{class:'mono tg',text:d.tags.map(t=>'#'+(TAGS[t]||t)).join(' ')||'—'}),h('div',{class:'dst '+d.status,text:DST[d.status]})),
       h('div',{class:'acts'},h('button',{type:'button',class:'navbtn',text:'SỬA',onclick:()=>{editing=d.code;pageAdmin();scrollTo(0,0)}}),
-        h('button',{type:'button',class:'navbtn',text:d.status==='slotout'?'→ CHƯA CÓ CHỦ':'→ SLOT OUT',onclick:()=>{d.status=d.status==='slotout'?'available':'slotout';saveDemos();pageAdmin()}}),del)));
+        h('button',{type:'button',class:'navbtn',text:d.status==='slotout'?'→ CHƯA CÓ CHỦ':'→ SLOT OUT',onclick:async()=>{try{await cloud().save({...d,status:d.status==='slotout'?'available':'slotout'});pageAdmin()}catch(error){toast(error.message)}}}))));
   });
   return w;
 }
@@ -1792,9 +1782,13 @@ function fitHead(){document.querySelectorAll('.contact h2,.hero h1').forEach(h=>
 let fitT;const fitSoon=()=>{clearTimeout(fitT);fitT=setTimeout(fitHead,120)};
 addEventListener('resize',fitSoon);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHead);addEventListener('load',fitHead);
 addEventListener('hashchange',()=>{cur=location.hash;route()});addEventListener('popstate',()=>{cur=location.hash;route()});
-document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a||e.defaultPrevented||e.metaKey||e.ctrlKey||e.shiftKey||e.button)return;e.preventDefault();closeAll();go(a.getAttribute('href'))});
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a||e.defaultPrevented||e.metaKey||e.ctrlKey||e.shiftKey||e.button)return;e.preventDefault();closeAll();if(a.getAttribute('href')==='#/admin'&&cloud()){cloud().manage();return}go(a.getAttribute('href'))});
 $$('.card[data-go]').forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a')&&!(SVC[c.dataset.go]&&SVC[c.dataset.go].locked))go('#/'+c.dataset.go)}));
 route();
+let loading=false;async function connect(){if(loading)return;loading=true;try{await syncCloud();route()}catch(error){toast(error.message)}finally{loading=false}}
+addEventListener('cq-cloud-ready',connect);addEventListener('cq-session-change',connect);
+addEventListener('focus',()=>{syncCloud().then(()=>{if($('#drawer').classList.contains('on'))render();else home.draw()}).catch(()=>{})});
+if(cloud())connect();
 })();
 </script>
 <script>
