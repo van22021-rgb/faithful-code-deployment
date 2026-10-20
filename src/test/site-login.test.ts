@@ -15,6 +15,7 @@ function loginHarness(admin: boolean, route = '#') {
   const pageAdmin = vi.fn();
   const addDemo = vi.fn();
   const reset = vi.fn();
+  const close = vi.fn();
   const error = { textContent: '' };
   const button = { disabled: false };
   let submit: ((event: unknown) => Promise<void>) | undefined;
@@ -28,8 +29,8 @@ function loginHarness(admin: boolean, route = '#') {
     let mode='login', pending='CQ-W-041', session='registered@example.com';
     ${loginCode}
   `);
-  setup(select, () => ({ auth, manage }), sync, vi.fn(), () => true, pageAdmin, addDemo, toast, admin, route);
-  return { manage, auth, sync, toast, pageAdmin, addDemo, error, button, async run() {
+  setup(select, () => ({ auth, manage }), sync, close, () => true, pageAdmin, addDemo, toast, admin, route);
+  return { manage, auth, sync, toast, pageAdmin, addDemo, error, button, close, reset, async run() {
     if (!submit) throw new Error('Login handler not registered');
     await submit({ preventDefault: vi.fn(), target: form });
   } };
@@ -51,5 +52,14 @@ describe('Standalone login completion', () => {
     await flow.run();
     expect(flow.manage).not.toHaveBeenCalled();
     expect(flow.addDemo).toHaveBeenCalledWith('CQ-W-041', true);
+  });
+  it('closes login and refreshes management when already on the management page', async () => {
+    const flow=loginHarness(true, '#/admin');
+    await flow.run();
+    expect(flow.close).toHaveBeenCalledOnce();
+    expect(flow.reset).toHaveBeenCalledOnce();
+    expect(flow.pageAdmin).toHaveBeenCalledOnce();
+    expect(flow.manage).not.toHaveBeenCalled();
+    expect(flow.addDemo).not.toHaveBeenCalled();
   });
 });
