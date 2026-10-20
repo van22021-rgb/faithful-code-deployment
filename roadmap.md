@@ -10,4 +10,4 @@
 - [x] Verify tanchinhuquy@gmail.com can open the management page and access orders and demo editing.
 - [x] Automatically open management after administrator login and verify customer login is unchanged.
 - [x] Audit and repair order/contact/price/status management and demo create/edit/ownership changes; verify saved results on the storefront.
-- [ ] Repair account-button navigation and login on the management page; keep the demo cart separate and verify both flows.
+- [x] Repair account-button navigation and same-page login completion; 14 tests pass and the registered administrator's account/cart destinations work in the browser.
