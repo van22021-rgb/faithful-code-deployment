@@ -597,6 +597,7 @@ $('#authF').addEventListener('submit',async e=>{
   try{
     if(!cloud())throw new Error('Đang kết nối, vui lòng thử lại.');
     await cloud().auth({email,password,signup:mode==='reg'});await syncCloud();
+    if(cloudAdmin){pending=null;await cloud().manage();return}
     f.reset();closeAll();
     if(/^#\/admin/.test(cur)){pageAdmin();return}
     if(pending){const c=pending;pending=null;addDemo(c,true)}else toast('Đã đăng nhập: '+session);
