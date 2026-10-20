@@ -11,3 +11,4 @@
 - [x] Automatically open management after administrator login and verify customer login is unchanged.
 - [x] Audit and repair order/contact/price/status management and demo create/edit/ownership changes; verify saved results on the storefront.
 - [x] Repair account-button navigation and same-page login completion; 14 tests pass and the registered administrator's account/cart destinations work in the browser.
+- [x] Keep one persistent site frame for storefront and management so admin login opens management without a second page load; verified login, account button, back link and logout.
