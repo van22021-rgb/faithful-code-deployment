@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -13,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from '@/integrations/supabase/client';
+import { SiteFrame } from '@/components/site-frame';
 
 function NotFoundComponent() {
   return (
@@ -119,6 +121,8 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router=useRouter();
+  const pathname=useRouterState({select:state=>state.location.pathname});
+  const siteView=pathname==='/'||pathname==='/quan-tri';
   useEffect(()=>{
     const {data:{subscription}}=supabase.auth.onAuthStateChange((event)=>{
       if(event!=='SIGNED_IN'&&event!=='SIGNED_OUT'&&event!=='USER_UPDATED')return;
@@ -131,6 +135,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* One persistent frame serves both the storefront and management, so switching never reloads the site. */}
+      {siteView&&<SiteFrame admin={pathname==='/quan-tri'} />}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>

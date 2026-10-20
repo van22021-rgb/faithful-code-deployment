@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -13,12 +13,12 @@ export function SiteFrame({admin=false}: {admin?:boolean}) {
   useEffect(()=>{
     const bridge = {
       async load() {
-        const {data:demos,error}=await supabase.from('demos').select('*').order('code');
+        const demosRequest=supabase.from('demos').select('*').order('code');
+        const {data:{session}}=await supabase.auth.getSession();const user=session?.user??null;
+        const [roleResult,orders]=await Promise.all([user?supabase.rpc('has_role',{_user_id:user.id,_role:'admin'}):Promise.resolve({data:false}),user?ordersFn():Promise.resolve([])]);
+        const isAdmin=roleResult.data===true;
+        const {data:demos,error}=await demosRequest;
         if(error) throw new Error('Không tải được quầy demo. Vui lòng thử lại.');
-        const {data:{user}}=await supabase.auth.getUser();
-        let isAdmin=false;
-        if(user){const result=await supabase.rpc('has_role',{_user_id:user.id,_role:'admin'});isAdmin=result.data===true;}
-        const orders=user?await ordersFn():[];
         return {demos,orders:orders.map(o=>({...o,at:Date.parse(o.created_at),due:Date.parse(o.due_at)})),session:user?.email??null,admin:isAdmin};
       },
       async auth(input: {email:string;password:string;signup:boolean}) {
@@ -38,10 +38,21 @@ export function SiteFrame({admin=false}: {admin?:boolean}) {
       async save(input:unknown){return saveFn({data:demoSchema.parse(input)});},
       async update(id:string,status:unknown){return updateFn({data:{id,status:orderStatusSchema.parse(status)}});},
       manage(){return navigate({to:'/quan-tri'});},
+      path(adminView:boolean){const to=adminView?'/quan-tri':'/';if(window.location.pathname!==to)void navigate({to,replace:true});},
     };
     const target=window as unknown as {chiquyCloud?:typeof bridge}; target.chiquyCloud=bridge;
     ref.current?.contentWindow?.dispatchEvent(new Event('cq-cloud-ready'));
     return ()=>{delete target.chiquyCloud;};
   },[ordersFn,placeFn,saveFn,updateFn,queryClient,navigate]);
-  return <iframe ref={ref} src={admin?'/site.html#/admin':'/site.html'} title={admin?'CHÍ QUY® — Quản lý demo':'CHÍ QUY® — Creative Department'} className="fixed inset-0 h-full w-full border-0" allow="autoplay; fullscreen; clipboard-write" />;
+  // The frame stays mounted across / and /quan-tri; switching only changes its hash, so the site never reloads.
+  const [src]=useState(()=>admin?'/site.html#/admin':'/site.html');
+  useEffect(()=>{
+    const frame=ref.current?.contentWindow;
+    try{
+      if(!frame||!frame.location.pathname.endsWith('/site.html'))return;
+      const inAdmin=/^#\/admin/.test(frame.location.hash);
+      if(admin!==inAdmin)frame.location.hash=admin?'#/admin':'#';
+    }catch{/* frame not ready */}
+  },[admin]);
+  return <iframe ref={ref} src={src} title={admin?'CHÍ QUY® — Quản lý demo':'CHÍ QUY® — Creative Department'} className="fixed inset-0 h-full w-full border-0" allow="autoplay; fullscreen; clipboard-write" />;
 }

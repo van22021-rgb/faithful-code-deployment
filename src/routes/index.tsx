@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SiteFrame } from '@/components/site-frame';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,5 +20,6 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return <SiteFrame />;
+  // The storefront frame is rendered once by the root layout.
+  return null;
 }
