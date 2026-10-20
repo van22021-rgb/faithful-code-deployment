@@ -24,7 +24,12 @@ export function SiteFrame({admin=false}: {admin?:boolean}) {
       async auth(input: {email:string;password:string;signup:boolean}) {
         const values=authSchema.parse(input);
         const result=input.signup ? await supabase.auth.signUp({...values,options:{emailRedirectTo:window.location.origin}}) : await supabase.auth.signInWithPassword(values);
-        if(result.error) throw new Error(input.signup?'Không tạo được tài khoản. Email có thể đã được dùng hoặc mật khẩu chưa đủ an toàn.':'Email hoặc mật khẩu không đúng.');
+        if(result.error){
+          const code=(result.error as {code?:string}).code;
+          if(code==='weak_password') throw new Error('Mật khẩu quá phổ biến, dễ bị đoán. Hãy chọn mật khẩu khác mạnh hơn (kết hợp chữ, số, ký tự đặc biệt).');
+          if(code==='user_already_exists'||code==='email_exists') throw new Error('Email này đã có tài khoản. Hãy chuyển sang Đăng nhập.');
+          throw new Error(input.signup?'Không tạo được tài khoản. Email có thể đã được dùng hoặc mật khẩu chưa đủ an toàn.':'Email hoặc mật khẩu không đúng.');
+        }
         if(!result.data.session) throw new Error('Hãy kiểm tra email để xác nhận tài khoản.');
         return true;
       },
