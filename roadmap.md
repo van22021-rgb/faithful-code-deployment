@@ -5,4 +5,6 @@
 - [x] Persist original demo catalog and allow admin create/edit/status changes.
 - [x] Add management page with authenticated, role-protected data and mutations.
 - [x] Verify customer/admin flows and access boundaries.
-- [ ] Assign administrator to tanchinhuquy@gmail.com and bienthuachi@gmail.com: both emails are absent from registered accounts; blocked until they sign up.
+- [x] Assign administrator to the registered account tanchinhuquy@gmail.com.
+- [ ] Assign administrator to bienthuachi@gmail.com: email is absent from registered accounts; blocked until signup.
+- [ ] Verify tanchinhuquy@gmail.com can open the management page and access orders and demo editing.
