@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Preserve the standalone site's presentation inside SiteFrame; the same-origin bridge connects its existing controls to Cloud without duplicating the UI.
+- Private orders and all administrative mutations use authenticated server functions and database RLS; administrator access comes only from protected user_roles, never browser storage or signup metadata.
+- Customer contact details are order snapshots, not profile records; order creation uses a validated atomic database function that derives account, demo details, total and dates server-side.

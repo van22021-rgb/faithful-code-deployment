@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SiteFrame } from '@/components/site-frame';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,12 +16,5 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return (
-    <iframe
-      src="/site.html"
-      title="CHÍ QUY® — Creative Department"
-      style={{ position: "fixed", inset: 0, width: "100%", height: "100%", border: 0 }}
-      allow="autoplay; fullscreen; clipboard-write"
-    />
-  );
+  return <SiteFrame />;
 }
