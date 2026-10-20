@@ -597,7 +597,7 @@ $('#authF').addEventListener('submit',async e=>{
   try{
     if(!cloud())throw new Error('Đang kết nối, vui lòng thử lại.');
     await cloud().auth({email,password,signup:mode==='reg'});await syncCloud();
-    if(cloudAdmin){pending=null;await cloud().manage();return}
+    if(cloudAdmin){pending=null;f.reset();closeAll();if(/^#\/admin/.test(cur))await pageAdmin();else await cloud().manage();return}
     f.reset();closeAll();
     if(/^#\/admin/.test(cur)){pageAdmin();return}
     if(pending){const c=pending;pending=null;addDemo(c,true)}else toast('Đã đăng nhập: '+session);
@@ -622,7 +622,16 @@ async function openDrawer(v){
   if(!session){openAuth('login','Đăng nhập để xem giỏ hàng và đặt demo.');return}
   reload();lastFocus=document.activeElement;view=v||'cart';render();showOv();$('#authM').classList.remove('on');$('#drawer').classList.add('on');setBg(true);let tries=0;(function fd(){const c=$('#dClose');if(c)c.focus();if(document.activeElement!==c&&++tries<8)setTimeout(fd,100)})();
 }
-$('#cartBtn').addEventListener('click',()=>openDrawer('cart'));$('#acctBtn').addEventListener('click',()=>openDrawer('cart'));
+async function openAccount(){
+  try{
+    await syncCloud();
+    if(!session){openAuth('login');return}
+    closeAll();
+    if(cloudAdmin){if(/^#\/admin/.test(cur))await pageAdmin();else await cloud().manage();return}
+    await openDrawer('account');
+  }catch(error){toast(error.message||'Không mở được tài khoản.')}
+}
+$('#cartBtn').addEventListener('click',()=>openDrawer('cart'));$('#acctBtn').addEventListener('click',openAccount);
 
 let ui=[];
 function field(label,input,hint){const err=h('span',{class:'ferr'});const w=h('label',{class:'fld'},h('span',{text:label}),input,hint?h('div',{class:'hint',text:hint}):null,err);return{w,input,err,set(m){err.textContent=m||'';w.classList.toggle('bad',!!m)}}}
@@ -694,9 +703,15 @@ function render(){
       h('button',{type:'button',class:'link mono',text:'← VỀ GIỎ HÀNG',onclick:()=>{view='cart';render()}}));
     return;
   }
-  $('#dTitle').textContent='GIỎ DEMO';
+  $('#dTitle').textContent=view==='account'?'TÀI KHOẢN':'GIỎ DEMO';
   body.append(h('div',{class:'acct mono'},h('span',{text:(me().name||'')+' · '+session}),h('button',{type:'button',class:'link',text:'ĐĂNG XUẤT',onclick:logout})));
   const os=myOrders();
+  if(view==='account'){
+    const box=h('div',{class:'ords'},h('h3',{text:'LỊCH SỬ ĐƠN ('+os.length+')'}));
+    if(!os.length)box.append(h('div',{class:'empty2',text:'Chưa có đơn đặt demo nào.'}));
+    os.forEach(o=>box.append(h('details',{},h('summary',{text:o.id+' · '+fdate(o.at)+' · '+o.items.length+' demo · '+money(o.total)}),h('div',{class:'od'},stBadge(o),h('div',{text:'Phản hồi dự kiến trước '+fdate(o.due)}),h('div',{text:o.items.map(i=>i.code+' ('+money(i.price)+')').join(', ')}),h('a',{class:'link',href:mailLink(o),text:'Gửi email đơn này ↗'})))));
+    body.append(box);return;
+  }
   if(os.length)body.append(h('div',{class:'ords top'},h('h3',{text:'ĐƠN GẦN NHẤT · '+os[0].id}),stBadge(os[0])));
   body.append(h('div',{class:'notice'},'Điền đủ thông tin cho từng demo trước khi gửi đặt hàng. Chí Quy phản hồi trong ',h('b',{text:'7 ngày'}),'. Mọi mức giá ghi nhận giao dịch bằng ',h('b',{text:'chuyển khoản'}),'. Mức giá chỉ là đề xuất; Chí Quy có quyền chấp thuận hoặc từ chối. Xem ',h('a',{class:'link',href:'#/demo',text:'Quy định đặt mua Demo'}),' · ',h('a',{class:'link',href:'#/policy',text:'Quy định chung'}),'.'));
   if(!cart.length)body.append(h('div',{class:'empty2'},h('p',{text:'Giỏ hàng đang trống. Chọn demo ở phần Samples và bấm “+ ĐẶT DEMO”.'}),h('button',{type:'button',class:'cbtn ghost',text:'XEM SAMPLES',onclick:()=>{closeAll();go('#/samples')}})));
