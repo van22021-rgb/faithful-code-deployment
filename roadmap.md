@@ -9,3 +9,4 @@
 - [ ] Assign administrator to bienthuachi@gmail.com: email is absent from registered accounts; blocked until signup.
 - [x] Verify tanchinhuquy@gmail.com can open the management page and access orders and demo editing.
 - [x] Automatically open management after administrator login and verify customer login is unchanged.
+- [x] Audit and repair order/contact/price/status management and demo create/edit/ownership changes; verify saved results on the storefront.
