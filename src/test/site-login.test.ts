@@ -1,8 +1,8 @@
-// @vitest-environment node
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
-const site = readFileSync(new URL('../../public/site.html', import.meta.url), 'utf8');
+const site = readFileSync(resolve(process.cwd(), 'public/site.html'), 'utf8');
 const start = site.indexOf("$('#authF').addEventListener('submit',async e=>{");
 const end = site.indexOf('\nasync function logout()', start);
 const loginCode = site.slice(start, end);
