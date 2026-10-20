@@ -1,4 +1,5 @@
 # CHÍ QUY demo commerce
+- [x] Replace platform favicon with CHÍ QUY logo and add branded sharing preview.
 - [x] Connect immediate signup/signin to existing page.
 - [x] Persist customer orders and exact acknowledgment in customer account.
 - [x] Persist original demo catalog and allow admin create/edit/status changes.
