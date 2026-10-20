@@ -7,4 +7,4 @@
 - [x] Verify customer/admin flows and access boundaries.
 - [x] Assign administrator to the registered account tanchinhuquy@gmail.com.
 - [ ] Assign administrator to bienthuachi@gmail.com: email is absent from registered accounts; blocked until signup.
-- [ ] Verify tanchinhuquy@gmail.com can open the management page and access orders and demo editing.
+- [x] Verify tanchinhuquy@gmail.com can open the management page and access orders and demo editing.
