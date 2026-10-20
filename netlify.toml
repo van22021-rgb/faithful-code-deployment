@@ -2,3 +2,8 @@
   command = "bun run build"
   # Nitro's Netlify preset writes static assets to dist/ (the server handler goes to .netlify/)
   publish = "dist"
+
+[build.environment]
+  # Supabase URL, project ID and publishable key are public by design (shipped to the browser client).
+  # The service-role key is never exposed, so it stays covered by secrets scanning.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PROJECT_ID,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_URL,VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_PUBLISHABLE_KEY"
