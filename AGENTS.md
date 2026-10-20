@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Preserve the standalone site's presentation inside SiteFrame; the same-origin bridge connects its existing controls to Cloud without duplicating the UI.
+- Standalone admin renders must stay scoped to the current route and latest request; catalog refreshes redraw the active catalog without replacing unsaved admin forms, preventing stale views and navigation races.
 - Keep favicon and sharing artwork derived from the CHÍ QUY logo; declare icons in the root and standalone document, and sharing metadata on leaf pages only, so branding works outside the iframe without altering its presentation.
 - Private orders and all administrative mutations use authenticated server functions and database RLS; administrator access comes only from protected user_roles, never browser storage or signup metadata.
 - Customer contact details are order snapshots, not profile records; order creation uses a validated atomic database function that derives account, demo details, total and dates server-side.

@@ -756,6 +756,7 @@ function catalog(o){
   const wrap=h('div',{},el,rail,o.more?h('a',{class:'cbtn morebtn',href:'#/samples',text:'XEM THÊM — TOÀN BỘ SAMPLES →'}):null);
   return{el:wrap,draw};
 }
+let activeCatalog=null;
 const home=catalog({limit:6,more:true});$('#homeCat').append(home.el);
 
 /* ---------- pages ---------- */
@@ -779,6 +780,7 @@ function pricing(k){
 function pageService(k){
   if(SVC[k].locked){const s=SVC[k];sub.replaceChildren(back(),h('span',{class:'kicker',text:'DỊCH VỤ / '+s.tag}),h('h1',{class:'sp-title'},s.name,h('small',{text:' ('+s.tag+')'})),h('p',{class:'sp-lead mono',text:'Phụ trách: '+s.lead}),h('p',{class:'sp-intro',text:s.intro}),h('div',{class:'lock-box mono',text:'CHỜ TRIỂN KHAI — dịch vụ đang tạm khóa, chưa nhận đơn.'}),h('p',{class:'mono rnote'},'Xem dịch vụ đang mở: ',h('a',{class:'link',href:'#/web',text:'CHÍ QUY (WEBSITE)'}),'.'));return}
   const s=SVC[k],c=catalog({service:k,grid:true});
+  activeCatalog=c;
   sub.replaceChildren(back(),h('span',{class:'kicker',text:'DỊCH VỤ / '+s.tag}),
     h('h1',{class:'sp-title'},s.name,h('small',{text:' ('+s.tag+')'})),
     h('p',{class:'sp-lead mono',text:'Phụ trách: '+s.lead}),h('p',{class:'sp-intro',text:s.intro}),
@@ -788,6 +790,7 @@ function pageService(k){
 }
 function pageSamples(){
   const c=catalog({grid:true});
+  activeCatalog=c;
   sub.replaceChildren(back(),h('span',{class:'kicker',text:'KHO SAMPLES'}),h('h1',{class:'sp-title'},'TOÀN BỘ ',h('span',{class:'o',text:'SAMPLES.'})),h('p',{class:'mono rnote',style:'margin:0 0 18px'},'Muốn mua Demo? Đọc ',h('a',{class:'link',href:'#/demo',text:'QUY ĐỊNH ĐẶT MUA & PHÁT TRIỂN DEMO'}),' trước khi đặt.'),c.el);c.draw();
 }
 
@@ -1696,10 +1699,14 @@ function pagePolicy(){
 
 /* ---------- admin ---------- */
 let aTab='orders',editing=null;
+let adminRender=0;
 async function pageAdmin(){
+  if(!/^#\/admin/.test(cur))return;
+  const renderId=++adminRender;
   sub.replaceChildren(back(),h('span',{class:'kicker',text:'QUẢN TRỊ — CHÍ QUY'}),h('h1',{class:'sp-title'},'ADMIN',h('small',{text:' PANEL'})));
   const box=h('div',{class:'adm'});sub.append(box);
   try{await syncCloud()}catch(error){box.append(h('div',{class:'notice',text:error.message}));return}
+  if(renderId!==adminRender||!/^#\/admin/.test(cur)||!box.isConnected)return;
   if(!session){box.append(h('button',{type:'button',class:'cbtn',text:'ĐĂNG NHẬP QUẢN TRỊ',onclick:()=>openAuth('login','Đăng nhập bằng tài khoản của Chí Quy.')}));return}
   if(!cloudAdmin){box.append(h('div',{class:'notice',text:'Tài khoản này chưa được cấp quyền quản trị.'}),h('button',{type:'button',class:'cbtn ghost',text:'ĐĂNG XUẤT',onclick:logout}));return}
   const tabs=h('div',{class:'tabs'},...[['orders','ĐƠN ĐẶT DEMO ('+allOrders.length+')'],['demos','QUẢN LÝ DEMO ('+demos.length+')']].map(([k,t])=>h('button',{type:'button',class:'filter'+(aTab===k?' active':''),text:t,onclick:()=>{aTab=k;editing=null;pageAdmin()}})),h('button',{type:'button',class:'filter',text:'ĐĂNG XUẤT',onclick:logout}));
@@ -1711,7 +1718,7 @@ function adminOrders(){
   w.append(h('div',{class:'mono count',text:Object.keys(OST).map(k=>(OST[k].split(' — ')[0])+': '+(cnt[k]||0)).join('  ·  ')}));
   if(!allOrders.length)w.append(h('div',{class:'empty2',text:'Chưa có đơn đặt demo nào.'}));
   allOrders.forEach(o=>{
-    const sel=h('select',{class:'sel'},...Object.keys(OST).map(k=>h('option',{value:k,text:OST[k],selected:k===o.status?'':null})));
+    const sel=h('select',{class:'sel','aria-label':'TRẠNG THÁI XỬ LÝ'},...Object.keys(OST).map(k=>h('option',{value:k,text:OST[k],selected:k===o.status?'':null})));
     sel.addEventListener('change',async()=>{sel.disabled=true;try{await cloud().update(o.id,sel.value);toast('Đã cập nhật trạng thái '+o.id);pageAdmin()}catch(error){sel.value=o.status;toast(error.message)}finally{sel.disabled=false}});
     const u=users[o.account]||{};
     w.append(h('div',{class:'item ord'},
@@ -1764,6 +1771,8 @@ function adminDemos(){
 /* ---------- router ---------- */
 const T0=document.title,TT={web:'CHÍ QUY (Website)',video:'CHÁNH TRÌ (Video)',event:'PHONG HƯỞNG (Event)',samples:'Toàn bộ Samples',policy:'Quy định chung',demo:'Quy định đặt mua & phát triển Demo',admin:'Admin'};
 function route(){
+  activeCatalog=null;
+  adminRender++;
   reload();loadCart();refresh();
   const m=cur.match(/^#\/([\w-]+)/),k=m&&m[1];
   document.body.classList.toggle('sub',!!k);document.body.classList.toggle('is-adm',k==='admin');document.title=(k&&TT[k]?TT[k]+' — ':'')+T0;
@@ -1790,9 +1799,10 @@ addEventListener('hashchange',()=>{cur=location.hash;route()});addEventListener(
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a||e.defaultPrevented||e.metaKey||e.ctrlKey||e.shiftKey||e.button)return;e.preventDefault();closeAll();if(a.getAttribute('href')==='#/admin'&&cloud()){cloud().manage();return}go(a.getAttribute('href'))});
 $$('.card[data-go]').forEach(c=>c.addEventListener('click',e=>{if(!e.target.closest('a')&&!(SVC[c.dataset.go]&&SVC[c.dataset.go].locked))go('#/'+c.dataset.go)}));
 route();
-let loading=false;async function connect(){if(loading)return;loading=true;try{await syncCloud();route()}catch(error){toast(error.message)}finally{loading=false}}
+function redrawCatalog(){home.draw();if(activeCatalog)activeCatalog.draw()}
+let loading=false;async function connect(){if(loading)return;loading=true;const previousSession=session,previousAdmin=cloudAdmin;try{await syncCloud();if(previousSession!==session||previousAdmin!==cloudAdmin||!/^#\/admin/.test(cur))route()}catch(error){toast(error.message)}finally{loading=false}}
 addEventListener('cq-cloud-ready',connect);addEventListener('cq-session-change',connect);
-addEventListener('focus',()=>{syncCloud().then(()=>{if($('#drawer').classList.contains('on'))render();else home.draw()}).catch(()=>{})});
+addEventListener('focus',()=>{syncCloud().then(()=>{if($('#drawer').classList.contains('on'))render();else redrawCatalog()}).catch(()=>{})});
 if(cloud())connect();
 })();
 </script>
